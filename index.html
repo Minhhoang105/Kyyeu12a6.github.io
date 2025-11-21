@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kỷ Yếu Lớp V16 - Chat Reply</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Quicksand:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        /* --- 1. CẤU HÌNH GIAO DIỆN --- */
+        :root {
+            --bg-fallback: #F9F1F0; --accent: #D4A59A; --accent-dark: #8E6C65;    
+            --text: #5E4B45; --card: rgba(255, 255, 255, 0.9);
+            --shadow-soft: 0 10px 30px rgba(142, 108, 101, 0.1);
+            --shadow-deep: 0 20px 50px rgba(142, 108, 101, 0.25);
+        }
+        * { box-sizing: border-box; outline: none; user-select: none; }
+        body {
+            background-color: var(--bg-fallback); background-position: center; background-size: cover; 
+            background-attachment: fixed; color: var(--text); font-family: 'Quicksand', sans-serif;
+            min-height: 100vh; display: flex; flex-direction: column; align-items: center;
+            overflow-x: hidden; margin: 0; transition: background-image 0.8s ease-in-out;
+        }
+        .animate-up { animation: fadeUp 1s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; opacity: 0; transform: translateY(30px); }
+        @keyframes fadeUp { to { opacity: 1; transform: translateY(0); } }
+        .overlay-bg {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255, 255, 255, 0.4); backdrop-filter: blur(5px); z-index: -1; pointer-events: none;
+        }
+        /* Header */
+        header { text-align: center; margin-top: 60px; width: 100%; max-width: 1200px; position: relative; z-index: 10; padding: 0 20px; }
+        h1 { 
+            font-family: 'Cinzel', serif; font-size: 3.5rem; margin: 0; letter-spacing: 2px; text-transform: uppercase;
+            background: linear-gradient(45deg, #5E4B45 0%, #D4A59A 50%, #5E4B45 100%);
+            background-size: 200% auto; -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            animation: shimmer 3s infinite linear;
+        }
+        @keyframes shimmer { to { background-position: 200% center; } }
+        .bg-btn { margin-top: 15px; padding: 10px 25px; background: rgba(255,255,255,0.8); border: 1px solid var(--accent); border-radius: 30px; color: var(--accent-dark); font-weight: 600; cursor: pointer; display: none; box-shadow: var(--shadow-soft); }
+        body.is-admin .bg-btn { display: inline-block; }
+        .class-frame { width: 100%; height: 450px; background: #fff; border-radius: 20px; margin-top: 40px; box-shadow: var(--shadow-deep); position: relative; overflow: hidden; border: 8px solid rgba(255,255,255,0.6); }
+        .class-frame img { width: 100%; height: 100%; object-fit: cover; transition: 1s; }
+        .class-frame:hover img { transform: scale(1.05); }
+        /* Memories */
+        .memories-grid { width: 100%; max-width: 1200px; margin: 60px 0 40px; display: grid; grid-template-columns: 1fr 1fr; gap: 50px; padding: 0 20px; }
+        .polaroids { display: flex; justify-content: center; gap: 10px; }
+        .polaroid { background: #fff; padding: 10px 10px 40px 10px; box-shadow: var(--shadow-soft); transition: 0.4s; transform: rotate(-5deg); width: 33%; position: relative; }
+        .polaroid:nth-child(2) { transform: rotate(3deg) translateY(-20px); z-index: 2; }
+        .polaroid:nth-child(3) { transform: rotate(-2deg); }
+        .polaroid:hover { transform: scale(1.1) rotate(0deg); z-index: 10; box-shadow: var(--shadow-deep); }
+        .polaroid img { width: 100%; height: 180px; object-fit: cover; }
+        .notes-col { display: flex; flex-direction: column; gap: 20px; justify-content: center; }
+        .note { background: rgba(255, 253, 240, 0.9); padding: 20px; border-left: 4px solid var(--accent); border-radius: 0 10px 10px 0; box-shadow: var(--shadow-soft); font-style: italic; color: #666; transition: 0.3s; }
+        .note:hover { transform: translateX(10px); background: #fff; }
+        
+        /* --- CHAT SYSTEM (NEW REPLY STYLES) --- */
+        .chat-section { width: 100%; max-width: 800px; margin: 0 auto 50px; padding: 0 20px; position: relative; z-index: 15; }
+        .chat-container { background: rgba(255, 255, 255, 0.95); border-radius: 20px; box-shadow: var(--shadow-deep); overflow: hidden; border: 1px solid rgba(255,255,255,0.5); backdrop-filter: blur(10px); display: flex; flex-direction: column; height: 550px; }
+        .chat-login-view { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; gap: 15px; padding: 40px; text-align: center; }
+        .chat-input { padding: 12px 20px; border: 2px solid #eee; border-radius: 30px; width: 250px; text-align: center; outline: none; transition: 0.3s; }
+        .chat-input:focus { border-color: var(--accent); }
+        .btn-chat { padding: 10px 30px; background: var(--accent); color: white; border: none; border-radius: 30px; font-weight: bold; cursor: pointer; transition: 0.3s; box-shadow: 0 5px 15px rgba(212, 165, 154, 0.4); }
+        .btn-chat:hover { transform: translateY(-2px); background: var(--accent-dark); }
+        .chat-main-view { display: none; flex-direction: column; height: 100%; }
+        .chat-header { padding: 15px 25px; background: var(--accent); color: white; font-weight: bold; display: flex; justify-content: space-between; align-items: center; }
+        .chat-logout { font-size: 0.8rem; cursor: pointer; opacity: 0.8; }
+        .chat-messages { flex-grow: 1; padding: 20px; overflow-y: auto; background: #fdfbfb; display: flex; flex-direction: column; gap: 15px; }
+        
+        .msg-bubble { max-width: 75%; padding: 10px 15px; border-radius: 15px; font-size: 0.95rem; line-height: 1.4; position: relative; animation: popIn 0.3s ease; }
+        @keyframes popIn { from{transform: scale(0.8); opacity:0;} to{transform: scale(1); opacity:1;} }
+        .msg-me { align-self: flex-end; background: var(--accent); color: white; border-bottom-right-radius: 2px; }
+        .msg-other { align-self: flex-start; background: #eee; color: #333; border-bottom-left-radius: 2px; }
+        .msg-sender { font-size: 0.75rem; margin-bottom: 3px; opacity: 0.8; font-weight: bold; }
+        
+        /* Styles cho phần Reply */
+        .msg-quote {
+            background: rgba(0,0,0,0.1);
+            border-left: 3px solid rgba(0,0,0,0.3);
+            padding: 5px 8px;
+            margin-bottom: 5px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            color: inherit;
+            opacity: 0.9;
+        }
+        .msg-reply-btn {
+            font-size: 0.8rem; cursor: pointer; opacity: 0; margin-left: 5px; 
+            transition: 0.2s; color: inherit; background: none; border:none;
+        }
+        .msg-bubble:hover .msg-reply-btn { opacity: 1; }
+
+        .chat-controls-wrapper { border-top: 1px solid #eee; background: white; }
+        .reply-preview {
+            display: none; /* Ẩn mặc định */
+            background: #f9f9f9; padding: 8px 15px; border-left: 4px solid var(--accent);
+            justify-content: space-between; align-items: center; font-size: 0.85rem; color: #555;
+        }
+        .chat-controls { padding: 15px; display: flex; gap: 10px; }
+        .msg-type-box { flex-grow: 1; padding: 10px 20px; border: 2px solid #eee; border-radius: 30px; outline: none; }
+        .msg-type-box:focus { border-color: var(--accent); }
+
+        /* Search & Grid */
+        .search-bar-container { width: 100%; max-width: 600px; margin: 0 auto 40px; padding: 0 20px; position: relative; z-index: 20; }
+        .search-input { width: 100%; padding: 15px 25px; border-radius: 50px; border: 2px solid rgba(255,255,255,0.8); background: rgba(255,255,255,0.9); font-family: 'Quicksand', sans-serif; font-size: 1.1rem; color: var(--text); box-shadow: var(--shadow-soft); transition: 0.3s; }
+        .search-input:focus { border-color: var(--accent); box-shadow: var(--shadow-deep); transform: scale(1.02); }
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 30px; width: 100%; max-width: 1200px; padding: 20px; margin-bottom: 100px; }
+        .card { background: var(--card); border-radius: 20px; padding: 25px; box-shadow: var(--shadow-soft); position: relative; border: 1px solid rgba(255,255,255,0.5); backdrop-filter: blur(5px); cursor: pointer; transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .card:hover { transform: translateY(-15px); box-shadow: var(--shadow-deep); border-color: var(--accent); }
+        .c-avatar { width: 120px; height: 120px; border-radius: 50%; margin: 0 auto 15px; overflow: hidden; border: 4px solid white; box-shadow: 0 5px 15px rgba(0,0,0,0.1); transition: 0.4s; }
+        .card:hover .c-avatar { transform: scale(1.1); border-color: var(--accent); }
+        .c-avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .c-name { text-align: center; font-weight: 700; font-size: 1.1rem; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        /* Profile Modal */
+        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.1); backdrop-filter: blur(20px); z-index: 2000; display: none; overflow-y: auto; }
+        .profile-box { max-width: 1000px; margin: 60px auto; background: #fff; border-radius: 30px; box-shadow: var(--shadow-deep); display: grid; grid-template-columns: 350px 1fr; min-height: 70vh; overflow: hidden; animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1); }
+        @keyframes slideUp { from {transform:translateY(100px); opacity:0;} to {transform:translateY(0); opacity:1;} }
+        .left-col { background: #FDF7F5; padding: 40px; text-align: center; border-right: 1px solid #eee; }
+        .p-avatar { width: 200px; height: 200px; border-radius: 50%; border: 8px solid #fff; box-shadow: var(--shadow-soft); margin: 0 auto 20px; object-fit: cover; }
+        .sub-imgs { display: flex; flex-direction: column; gap: 15px; margin-top: 20px; }
+        .sub-img { width: 100%; height: 140px; border-radius: 12px; object-fit: cover; border: 3px solid #fff; box-shadow: 0 2px 10px rgba(0,0,0,0.05); transition: 0.3s; }
+        .sub-img:hover { transform: scale(1.05); }
+        .right-col { padding: 50px; }
+        .p-name { font-family: 'Cinzel', serif; font-size: 3rem; color: var(--accent-dark); margin-bottom: 10px; }
+        .p-quote { font-style: italic; color: #999; margin-bottom: 30px; display: block; }
+        .notebook { width: 100%; min-height: 300px; padding: 0 10px; background-image: linear-gradient(#e5e5e5 1px, transparent 1px); background-size: 100% 2em; line-height: 2em; border: none; color: #555; font-size: 1.1rem; }
+        .close-btn { position: absolute; top: 20px; right: 20px; width: 40px; height: 40px; border-radius: 50%; background: #f0f0f0; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s; }
+        .close-btn:hover { background: var(--accent); color: white; }
+        /* Admin */
+        .edit-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); display: none; align-items: center; justify-content: center; color: white; font-size: 1.5rem; cursor: pointer; transition: 0.2s; }
+        .del-btn, .add-btn { display: none; }
+        body.is-admin [contenteditable="false"] { border: 1px dashed var(--accent); background: rgba(255,255,0,0.05); cursor: text; }
+        body.is-admin .p-avatar-wrapper:hover .edit-overlay, body.is-admin .class-frame:hover .edit-overlay, body.is-admin .polaroid:hover .edit-overlay { display: flex; }
+        body.is-admin .del-btn { display: block; position: absolute; top: 5px; right: 5px; width: 25px; height: 25px; background: red; color: white; border-radius: 50%; border: none; cursor: pointer; }
+        body.is-admin .add-btn { display: block; width: 100%; padding: 10px; border: 2px dashed var(--accent); margin-top: 10px; background: none; color: var(--accent); font-weight: bold; cursor: pointer; border-radius: 10px; }
+        .admin-toggle { position: fixed; bottom: 30px; right: 30px; width: 60px; height: 60px; background: #333; border-radius: 50%; color: white; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 5000; box-shadow: 0 5px 15px rgba(0,0,0,0.3); transition: 0.3s; font-size: 1.5rem; border: 2px solid white; }
+        .admin-toggle.active { background: #27ae60; transform: rotate(90deg); }
+        .login-modal { position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); display:none; align-items:center; justify-content:center; z-index:6000; }
+        .login-box { background:white; padding:40px; border-radius: 20px; text-align:center; width:350px; }
+        .login-input { padding:10px; border:1px solid #ddd; border-radius:5px; margin:15px 0; width: 200px; text-align: center; }
+        .hearts-container { position: fixed; width: 100%; height: 100%; top:0; left:0; pointer-events: none; z-index: -1; }
+        .heart { position: absolute; bottom: -50px; animation: float 8s linear forwards; font-size: 20px; color: var(--accent); opacity: 0.6; }
+        @keyframes float { to { transform: translateY(-110vh) rotate(360deg); opacity: 0; } }
+        .acc-list-box { width: 80%; max-width: 600px; height: 70vh; text-align: left; }
+        .acc-list-content { width: 100%; height: 80%; overflow-y: auto; background: #f9f9f9; padding: 15px; border: 1px solid #eee; margin-top: 10px; font-family: monospace; }
+    </style>
+</head>
+<body>
+
+    <div class="overlay-bg"></div>
+    <div class="hearts-container" id="hearts"></div>
+
+    <header class="animate-up">
+        <h1 id="clsTitle" class="shimmer-text" contenteditable="false">Kỷ Yếu 12A1</h1>
+        <button class="bg-btn" onclick="clickUpload('bgInput')">🖼️ Đổi Hình Nền</button>
+        <input type="file" id="bgInput" hidden accept="image/*" onchange="changeBg(this)">
+
+        <div class="class-frame">
+            <img id="mainPhoto" src="https://images.unsplash.com/photo-1529156069898-49953e39b3ac?q=80&w=1200">
+            <div class="edit-overlay" onclick="clickUpload('mainInput')">📷 Thay Ảnh</div>
+            <input type="file" id="mainInput" hidden accept="image/*" onchange="changeMain(this)">
+        </div>
+    </header>
+
+    <div class="memories-grid animate-up" style="animation-delay: 0.2s;">
+        <div class="polaroids">
+            <div class="polaroid"><img id="mImg1" src="https://images.unsplash.com/photo-1523580494863-6f3031224c94?w=400"><div class="edit-overlay" onclick="clickUpload('mi1')">✏️</div><input type="file" id="mi1" hidden onchange="changeMem(this,0)"></div>
+            <div class="polaroid"><img id="mImg2" src="https://images.unsplash.com/photo-1511632765486-a01980e01a18?w=400"><div class="edit-overlay" onclick="clickUpload('mi2')">✏️</div><input type="file" id="mi2" hidden onchange="changeMem(this,1)"></div>
+            <div class="polaroid"><img id="mImg3" src="https://images.unsplash.com/photo-1491438590914-bc09fcaaf77a?w=400"><div class="edit-overlay" onclick="clickUpload('mi3')">✏️</div><input type="file" id="mi3" hidden onchange="changeMem(this,2)"></div>
+        </div>
+        <div class="notes-col">
+            <div id="note1" class="note" contenteditable="false">Thông báo: Họp lớp vào cuối tuần...</div>
+            <div id="note2" class="note" contenteditable="false">Hạn nộp sổ lưu bút là ngày 20...</div>
+            <div id="note3" class="note" contenteditable="false">Tìm đồ thất lạc: Ai thấy sách Toán tớ đâu không?</div>
+        </div>
+    </div>
+
+    <div class="chat-section animate-up" style="animation-delay: 0.3s;">
+        <div class="chat-container">
+            <div id="chatLoginView" class="chat-login-view">
+                <h2 style="color: var(--accent-dark);">💬 Trò Chuyện Lớp Học</h2>
+                <p style="color:#777">Đăng nhập để tham gia chat</p>
+                <input type="text" id="cUser" class="chat-input" placeholder="Tài khoản (Ví dụ: hs1)">
+                <input type="password" id="cPass" class="chat-input" placeholder="Mật khẩu">
+                <button class="btn-chat" onclick="chatLogin()">Đăng Nhập</button>
+                <p style="font-size: 0.8rem; color: #999; margin-top: 10px;">(Liên hệ Admin để lấy tài khoản)</p>
+            </div>
+            <div id="chatMainView" class="chat-main-view">
+                <div class="chat-header">
+                    <span>🟢 <span id="chatDisplayName">User</span></span>
+                    <span class="chat-logout" onclick="chatLogout()">Đăng xuất ↪</span>
+                </div>
+                <div id="chatList" class="chat-messages"></div>
+                
+                <div class="chat-controls-wrapper">
+                    <div id="replyPreview" class="reply-preview">
+                        <span>Đang trả lời: <b id="replyUser">Name</b></span>
+                        <span onclick="cancelReply()" style="cursor:pointer; font-weight:bold;">✕</span>
+                    </div>
+                    <div class="chat-controls">
+                        <input type="text" id="msgInput" class="msg-type-box" placeholder="Viết tin nhắn...">
+                        <button class="btn-chat" style="padding: 10px 20px;" onclick="sendMessage()">Gửi ➤</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="search-bar-container animate-up" style="animation-delay: 0.4s;">
+        <input type="text" id="searchInput" class="search-input" placeholder="🔍 Tìm tên thành viên trong lớp..." onkeyup="filterStudents()">
+    </div>
+
+    <div class="grid" id="grid"></div>
+
+    <div class="modal" id="profileModal">
+        <div class="profile-box">
+            <div class="close-btn" onclick="closeModal()">×</div>
+            <div class="left-col">
+                <div style="position: relative;" class="p-avatar-wrapper">
+                    <img id="pAvatar" class="p-avatar" src="">
+                    <div class="edit-overlay" style="border-radius: 50%;" onclick="clickUpload('avaInput')">📷</div>
+                    <input type="file" id="avaInput" hidden accept="image/*" onchange="changeAvatar(this)">
+                </div>
+                <div class="sub-imgs" id="subList"></div>
+                <button class="add-btn" onclick="clickUpload('subInput')">+ Ảnh Kỷ Niệm</button>
+                <input type="file" id="subInput" hidden accept="image/*" onchange="addSub(this)">
+            </div>
+            <div class="right-col">
+                <div id="pName" class="p-name" contenteditable="false">Tên</div>
+                <div id="pQuote" class="p-quote" contenteditable="false">Quote</div>
+                <div style="font-weight:bold; margin-top:20px; color:var(--accent)">📖 Dòng Lưu Bút:</div>
+                <div id="pNote" class="notebook" contenteditable="false">Viết vào đây...</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="admin-toggle" id="adminBtn" onclick="loginToggle()">⚙️</div>
+    <div class="login-modal" id="loginModal">
+        <div class="login-box">
+            <h3>Admin Login</h3>
+            <input type="password" id="passInput" class="login-input" placeholder="admin123">
+            <br>
+            <button onclick="login()" style="padding:10px 30px; background:var(--accent); color:white; border:none; border-radius:20px; cursor:pointer">Vào</button>
+            <div style="margin-top:10px; color:#999; cursor:pointer" onclick="closeLogin()">Hủy</div>
+        </div>
+    </div>
+    <div class="login-modal" id="accListModal">
+        <div class="login-box acc-list-box">
+            <h3>📋 Danh Sách 50 Tài Khoản</h3>
+            <p style="font-size: 0.8rem; color: #666;">Hãy copy và gửi cho các bạn trong lớp</p>
+            <div class="acc-list-content" id="accListContent"></div>
+            <button onclick="closeAccList()" style="margin-top:15px; padding:10px 30px; background:#333; color:white; border:none; border-radius:20px; cursor:pointer">Đóng</button>
+        </div>
+    </div>
+
+    <script>
+        const PASS = "admin123";
+        let isAdmin = false, curId = 0;
+        const TOTAL_STUDENTS = 50;
+
+        const defData = {
+            title: "Kỷ Yếu 12A1", bg: "", main: "https://images.unsplash.com/photo-1529156069898-49953e39b3ac?q=80&w=1200",
+            memImgs: ["https://images.unsplash.com/photo-1523580494863-6f3031224c94?w=400", "https://images.unsplash.com/photo-1511632765486-a01980e01a18?w=400", "https://images.unsplash.com/photo-1491438590914-bc09fcaaf77a?w=400"],
+            notes: ["Thông báo...", "Hạn nộp...", "Tìm đồ..."],
+            students: new Array(TOTAL_STUDENTS).fill(null).map((_,i)=>({
+                id: i+1, name: `Học Sinh ${i+1}`, quote: "Chưa có trích dẫn", note: "Chưa có lưu bút...",
+                avatar: "https://i.pinimg.com/originals/f1/0f/7b/f10f7b59f3d5ea31500908728362635c.jpg", subs: []
+            })),
+            chatHistory: []
+        };
+
+        let db = JSON.parse(localStorage.getItem('yearbook_v16')) || defData;
+        const specialUsers = { "mã hoàng": { pass: "123123", name: "Hoàng" } };
+        let studentAccounts = {}; 
+        for(let i=1; i<=TOTAL_STUDENTS; i++) { studentAccounts[`hs${i}`] = { pass: `pass${i}`, studentIndex: i-1 }; }
+
+        window.onload = () => { initHearts(); render(); applyBg(); checkChatSession(); };
+        function save() { localStorage.setItem('yearbook_v16', JSON.stringify(db)); }
+
+        // --- CHAT REPLY LOGIC (MỚI) ---
+        let currentChatUser = null;
+        let replyingTo = null; // Biến lưu trạng thái đang trả lời tin nào
+
+        function chatLogin() {
+            const u = document.getElementById('cUser').value.toLowerCase().trim();
+            const p = document.getElementById('cPass').value;
+            if(specialUsers[u] && specialUsers[u].pass === p) { loginSuccess(specialUsers[u].name); return; }
+            if(studentAccounts[u] && studentAccounts[u].pass === p) {
+                const sIndex = studentAccounts[u].studentIndex;
+                loginSuccess(db.students[sIndex].name);
+                return;
+            }
+            alert("Sai tài khoản hoặc mật khẩu!");
+        }
+
+        function loginSuccess(name) { currentChatUser = name; sessionStorage.setItem('chatUser', currentChatUser); showChatInterface(); }
+        function checkChatSession() { if(sessionStorage.getItem('chatUser')) { currentChatUser = sessionStorage.getItem('chatUser'); showChatInterface(); } }
+        function showChatInterface() {
+            document.getElementById('chatLoginView').style.display = 'none';
+            document.getElementById('chatMainView').style.display = 'flex';
+            document.getElementById('chatDisplayName').innerText = currentChatUser;
+            renderMessages();
+        }
+        function chatLogout() { sessionStorage.removeItem('chatUser'); document.getElementById('chatMainView').style.display = 'none'; document.getElementById('chatLoginView').style.display = 'flex'; document.getElementById('cPass').value = ''; }
+
+        function sendMessage() {
+            const input = document.getElementById('msgInput');
+            const text = input.value.trim();
+            if(text) {
+                const newMsg = {
+                    sender: currentChatUser,
+                    text: text,
+                    time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
+                    reply: replyingTo // Lưu thông tin trả lời (nếu có)
+                };
+                db.chatHistory.push(newMsg);
+                save();
+                cancelReply(); // Reset trạng thái reply
+                renderMessages();
+                input.value = '';
+            }
+        }
+
+        function renderMessages() {
+            const list = document.getElementById('chatList'); list.innerHTML = '';
+            db.chatHistory.slice(-50).forEach((msg, index) => {
+                const isMe = msg.sender === currentChatUser;
+                let replyHTML = '';
+                // Nếu tin nhắn này là trả lời tin khác, hiển thị phần trích dẫn
+                if(msg.reply) {
+                    replyHTML = `<div class="msg-quote"><b>${msg.reply.sender}:</b> ${msg.reply.text}</div>`;
+                }
+
+                list.innerHTML += `
+                    <div class="msg-bubble ${isMe ? 'msg-me' : 'msg-other'}">
+                        ${replyHTML}
+                        <div class="msg-sender">
+                            ${msg.sender} • ${msg.time}
+                            <button class="msg-reply-btn" onclick="startReply('${msg.sender}', '${msg.text.replace(/'/g, "\\'")}')">↩</button>
+                        </div>
+                        ${msg.text}
+                    </div>`;
+            });
+            list.scrollTop = list.scrollHeight;
+        }
+
+        // Kích hoạt chế độ trả lời
+        window.startReply = function(sender, text) {
+            replyingTo = { sender: sender, text: text }; // Lưu tin nhắn gốc
+            document.getElementById('replyUser').innerText = sender;
+            document.getElementById('replyPreview').style.display = 'flex';
+            document.getElementById('msgInput').focus();
+        }
+
+        // Hủy trả lời
+        window.cancelReply = function() {
+            replyingTo = null;
+            document.getElementById('replyPreview').style.display = 'none';
+        }
+
+        document.getElementById('msgInput').addEventListener('keypress', e=>{if(e.key==='Enter') sendMessage()});
+
+        // --- MAIN LOGIC ---
+        function render() {
+            document.getElementById('clsTitle').innerText = db.title; document.getElementById('mainPhoto').src = db.main;
+            for(let i=0; i<3; i++) { document.getElementById(`mImg${i+1}`).src = db.memImgs[i]; document.getElementById(`note${i+1}`).innerText = db.notes[i]; }
+            const g = document.getElementById('grid'); g.innerHTML = '';
+            db.students.forEach((s, i) => {
+                g.innerHTML += `<div class="card animate-up" style="animation-delay: ${i*0.05}s" onclick="openProfile(${i})"><div class="c-avatar"><img src="${s.avatar}"></div><div class="c-name">${s.name}</div></div>`;
+            });
+        }
+        function filterStudents() {
+            const term = document.getElementById('searchInput').value.toLowerCase();
+            const cards = document.querySelectorAll('.card');
+            db.students.forEach((s, i) => { cards[i].style.display = s.name.toLowerCase().includes(term) ? 'block' : 'none'; });
+        }
+        function applyBg() { if(db.bg) document.body.style.backgroundImage = `url('${db.bg}')`; }
+        function openProfile(i) { curId = i; const s = db.students[i]; document.getElementById('pAvatar').src = s.avatar; document.getElementById('pName').innerText = s.name; document.getElementById('pQuote').innerText = s.quote; document.getElementById('pNote').innerText = s.note; renderSubs(); updateEdit(); document.getElementById('profileModal').style.display = 'block'; }
+        function renderSubs() { const c = document.getElementById('subList'); c.innerHTML = ''; db.students[curId].subs.forEach((src, idx) => { c.innerHTML += `<div style="position:relative"><img class="sub-img" src="${src}"><button class="del-btn" onclick="delSub(${idx})">×</button></div>`; }); }
+        function closeModal() { document.getElementById('profileModal').style.display='none'; render(); }
+        function clickUpload(id) { if(isAdmin) document.getElementById(id).click(); }
+        function read(inp, cb) { if(inp.files[0]){ const r=new FileReader(); r.onload=e=>cb(e.target.result); r.readAsDataURL(inp.files[0]); } }
+        function changeBg(i) { read(i, r=>{ db.bg=r; applyBg(); save(); }); }
+        function changeMain(i) { read(i, r=>{ db.main=r; render(); save(); }); }
+        function changeMem(i, idx) { read(i, r=>{ db.memImgs[idx]=r; render(); save(); }); }
+        function changeAvatar(i) { read(i, r=>{ db.students[curId].avatar=r; document.getElementById('pAvatar').src=r; save(); }); }
+        function addSub(i) { read(i, r=>{ if(db.students[curId].subs.length<3){ db.students[curId].subs.push(r); renderSubs(); save(); } else alert("Max 3!"); }); }
+        window.delSub = (idx) => { if(confirm("Xóa?")){ db.students[curId].subs.splice(idx,1); renderSubs(); save(); } }
+        ['clsTitle', 'note1', 'note2', 'note3', 'pName', 'pQuote', 'pNote'].forEach(id => { document.getElementById(id).addEventListener('blur', function() { if(!isAdmin) return; const val = this.innerText; if(id==='clsTitle') db.title = val; else if(id.includes('note') && id.length===5) db.notes[parseInt(id.replace('note',''))-1] = val; else { let k = id.replace('p','').toLowerCase(); if(k==='name') k='name'; db.students[curId][k] = val; } save(); }); });
+        function loginToggle() { if(isAdmin){ isAdmin=false; updateUI(); } else document.getElementById('loginModal').style.display='flex'; }
+        function closeLogin() { document.getElementById('loginModal').style.display='none'; }
+        function login() { if(document.getElementById('passInput').value === PASS) { isAdmin=true; closeLogin(); updateUI(); } else alert("Sai mật khẩu"); }
+        function updateUI() { const b = document.body; const btn = document.getElementById('adminBtn'); if(isAdmin) { b.classList.add('is-admin'); btn.classList.add('active'); if(!document.getElementById('exportBtn')) { const btn = document.createElement('button'); btn.id = 'exportBtn'; btn.className = 'bg-btn'; btn.innerText = '📋 Lấy Danh Sách TK'; btn.style.marginLeft = '10px'; btn.onclick = showAccList; document.querySelector('header').appendChild(btn); } document.getElementById('exportBtn').style.display = 'inline-block'; } else { b.classList.remove('is-admin'); btn.classList.remove('active'); if(document.getElementById('exportBtn')) document.getElementById('exportBtn').style.display = 'none'; } updateEdit(); }
+        function showAccList() { let html = `<strong>Tài khoản chung:</strong> mã hoàng / 123123<br><hr>`; for(let i=1; i<=TOTAL_STUDENTS; i++) { html += `TK: <b>hs${i}</b> - MK: <b>pass${i}</b> (Của: ${db.students[i-1].name})<br>`; } document.getElementById('accListContent').innerHTML = html; document.getElementById('accListModal').style.display = 'flex'; }
+        function closeAccList() { document.getElementById('accListModal').style.display = 'none'; }
+        function updateEdit() { ['clsTitle', 'note1', 'note2', 'note3', 'pName', 'pQuote', 'pNote'].forEach(id => document.getElementById(id).contentEditable = isAdmin); }
+        function initHearts() { setInterval(() => { const h = document.createElement('div'); h.className='heart'; h.innerText='❤'; h.style.left = Math.random()*100+'vw'; document.getElementById('hearts').appendChild(h); setTimeout(()=>h.remove(),8000); }, 500); }
+        document.getElementById('passInput').addEventListener('keypress', e=>{if(e.key==='Enter') login()});
+    </script>
+</body>
+</html>
